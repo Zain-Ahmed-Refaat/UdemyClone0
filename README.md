@@ -152,7 +152,7 @@ Configure your application settings in `appsettings.json`:
 
 },
 
-"JwtSettings":  {
+"JWT":  {
 
 "Key":  "YourSecretKeyHere",
 
@@ -160,9 +160,7 @@ Configure your application settings in `appsettings.json`:
 
 "Audience":  "YourAudienceHere",
 
-"ExpireDays":  7
-
-}
+	}
 
 }
 
