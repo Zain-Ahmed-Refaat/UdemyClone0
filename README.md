@@ -232,11 +232,15 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 
 {
 
+"username": user,
+
 "email":  "user@example.com",
 
 "password":  "YourPassword123!",
 
-"role":  "Instructor"
+"ConfirmPassword": "YourPassword123!", 
+
+"role":  1     // 1-user, 2-Admin, 3-Instructor, 4-Student
 
 }
 
@@ -256,7 +260,7 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 
 "email":  "user@example.com",
 
-"role":  "Instructor"
+"roles":  "Instructor"
 
 }
 
