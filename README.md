@@ -1,6 +1,6 @@
 # UdemyClone
 
-Welcome to **UdemyClone**, a comprehensive .NET Core 7 Web API project that replicates some key functionalities of an online learning platform like Udemy. This application is built to manage user roles, course creation, enrollment, quizzes, and more.
+Welcome to **UdemyClone**, a comprehensive .NET Core 7 Web API project replicating some key functionalities of an online learning platform like Udemy. This application is built to manage user roles, course creation, enrollment, quizzes, and more.
 
 ## Table of Contents
 - [Project Overview](#project-overview)
@@ -28,7 +28,7 @@ Welcome to **UdemyClone**, a comprehensive .NET Core 7 Web API project that repl
 
   
 
-**UdemyClone** is a RESTful API developed using ASP.NET Core 7. It is designed to mimic an online educational platform, providing users with the ability to create courses, enroll students, manage lessons, and administer quizzes. The application is built with a focus on clean architecture, using service-oriented design to encapsulate business logic and ensure maintainability.
+**UdemyClone** is a RESTful API developed using ASP.NET Core 7. It is designed to mimic an online educational platform, allowing users to create courses, enroll students, manage lessons, and administer quizzes. The application is built with a focus on clean architecture, using service-oriented design to encapsulate business logic and ensure maintainability.
 
   
 
@@ -232,7 +232,7 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 
 {
 
-"username": user,
+"username": "user",
 
 "email":  "user@example.com",
 
@@ -356,7 +356,7 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 
   
 
-- **Endpoint**: `POST /api/instructorcourse/create`
+- **Endpoint**: `POST /api/instructor/create`
 
 - **Description**: Create a new course by an authenticated instructor.
 
@@ -406,7 +406,7 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 
   
 
-- **Endpoint**: `PUT /api/instructorcourse/update/{id}`
+- **Endpoint**: `PUT /api/instructor/update/{id}`
 
 - **Description**: Update course details if the instructor is the creator.
 
@@ -649,11 +649,11 @@ The API will be available at `https://localhost:5001` or `http://localhost:5000`
 "dateTaken":  "2024-07-27T12:34:56Z"
 }
 ```
-#### Get Quiz History (Student Only)
+#### Get Quiz Status (Student Only)
 
-- **Endpoint**: `GET /api/student/quizhistory`
+- **Endpoint**: `GET /api/student/quizstatus`
 
-- **Description**: Retrieve a student's quiz history.
+- **Description**: Retrieve a student's quiz status.
 
 - **Authorization**: Student
 
