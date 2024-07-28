@@ -73,6 +73,39 @@ namespace UdemyClone.Controllers
             }
             catch (DbUpdateException dbEx)
             {
+                return StatusCode(500, dbEx.InnerException?.Message ?? dbEx.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPost("Retake-Quiz")]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> RetakeQuiz([FromQuery] Guid quizId)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var studentId = GetIdFromToken();
+
+            try
+            {
+                var canRetake = await _quizService.CanStudentRetakeQuizAsync(quizId, studentId);
+                if (!canRetake)
+                    return BadRequest("You have already passed this quiz or have not attempted it yet.");
+
+                var result = await _quizService.RetakeQuizAsync(quizId, studentId);
+                return Ok(result);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (DbUpdateException dbEx)
+            {
                 // Log the error with detailed inner exception
                 return StatusCode(500, dbEx.InnerException?.Message ?? dbEx.Message);
             }

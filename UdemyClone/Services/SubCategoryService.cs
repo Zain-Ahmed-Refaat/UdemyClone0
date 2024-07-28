@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UdemyClone.Data;
+using UdemyClone.Dto;
 using UdemyClone.Entities;
 using UdemyClone.Services.IServices;
 
@@ -54,19 +55,20 @@ namespace UdemyClone.Services
                 .ToListAsync();
         }
 
-        public async Task<SubCategory> UpdateSubCategoryAsync(Guid id, string newName)
+        public async Task<SubCategory> UpdateSubCategoryAsync(SubCategoryUpdateDto updateDto)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentException("Invalid SubCategory ID.");
+            var subCategory = await context.SubCategories
+                .FirstOrDefaultAsync(sc => sc.Id == updateDto.Id);
 
-            var subCategory = await context.SubCategories.FindAsync(id);
             if (subCategory == null)
-                throw new KeyNotFoundException("SubCategory not found.");
+            {
+                throw new ArgumentNullException("Not Found");
+            }
 
-            if (string.IsNullOrWhiteSpace(newName))
-                throw new ArgumentException("New SubCategory name cannot be null or empty.");
 
-            subCategory.Name = newName;
+            subCategory.Name = updateDto.Name;
+            subCategory.CategoryId = updateDto.CategoryId;
+
             context.SubCategories.Update(subCategory);
             await context.SaveChangesAsync();
 

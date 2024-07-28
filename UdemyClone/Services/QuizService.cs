@@ -19,6 +19,45 @@ namespace UdemyClone.Services
             this._quizRepository = quizRepository;
         }
 
+        public async Task<bool> CanStudentRetakeQuizAsync(Guid quizId, Guid studentId)
+        {
+
+            var lastAttempt = await _quizRepository.GetLatestStudentQuizAttemptAsync(quizId, studentId);
+
+            if (lastAttempt == null)
+                return false; 
+
+            return !lastAttempt.Passed;
+        }
+
+
+        public async Task<string> RetakeQuizAsync(Guid quizId, Guid studentId)
+        {
+            var quiz = await _quizRepository.GetByIdAsync(quizId);
+            if (quiz == null)
+                throw new NotFoundException("Quiz not found.");
+
+            var lastAttempt = await _quizRepository.GetLatestStudentQuizAttemptAsync(quizId, studentId);
+            if (lastAttempt == null || lastAttempt.Passed)
+                throw new InvalidOperationException("You cannot retake this quiz.");
+
+            var studentQuiz = new StudentQuiz
+            {
+                Id = Guid.NewGuid(),
+                StudentId = studentId,
+                QuizId = quizId,
+                DateTaken = DateTime.UtcNow,
+                Score = 0,
+                Passed = false
+            };
+
+            await _quizRepository.AddStudentQuizAsync(studentQuiz);
+
+
+            return $"Quiz Retake Allowed. Please Submit Your Answers!";
+        }
+
+
         public async Task<bool> HasStudentTakenQuizAsync(Guid studentId, Guid quizId)
         {
             return await context.StudentQuizzes
@@ -135,6 +174,11 @@ namespace UdemyClone.Services
             if (quiz == null)
                 throw new NotFoundException("Quiz not found.");
 
+            var lastAttempt = await _quizRepository.GetLatestStudentQuizAttemptAsync(quizId, studentId);
+
+            if (lastAttempt != null && lastAttempt.Passed)
+                return "You have already passed this quiz. No need to retake.";
+
             var studentQuiz = new StudentQuiz
             {
                 Id = Guid.NewGuid(),
@@ -176,8 +220,9 @@ namespace UdemyClone.Services
 
             await _quizRepository.UpdateStudentQuizAsync(studentQuiz);
 
-            return $"Quiz Submitted Successfully\nCheck Your Results!";
+            return "Quiz Submitted Successfully!\nCheck Your Results!";
         }
+
 
 
         public async Task<QuizResultDto> GetQuizResultAsync(Guid quizId, Guid studentId)

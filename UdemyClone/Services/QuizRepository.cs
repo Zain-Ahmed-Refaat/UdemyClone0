@@ -14,6 +14,14 @@ namespace UdemyClone.Services
              _context = context;
          }
 
+        public async Task<StudentQuiz> GetLatestStudentQuizAttemptAsync(Guid quizId, Guid studentId)
+        {
+            return await _context.StudentQuizzes
+                .Where(sq => sq.QuizId == quizId && sq.StudentId == studentId)
+                .OrderByDescending(sq => sq.DateTaken)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task AddAsync(Quiz quiz)
         {
             // Add quiz

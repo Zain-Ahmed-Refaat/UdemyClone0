@@ -1,4 +1,6 @@
-﻿namespace UdemyClone.Dto
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UdemyClone.Dto
 {
     public class CreateSubCategoryDto
     {
@@ -6,8 +8,16 @@
         public Guid CategoryId { get; set; }
 
     }
-    public class UpdateSubCategoryDto
+    public class SubCategoryUpdateDto
     {
-        public string NewName { get; set; }
+        [Required]
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "SubCategory name is required.")]
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "SubCategory name must be between 3 and 100 characters.")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "CategoryId is required.")]
+        public Guid CategoryId { get; set; }
     }
 }

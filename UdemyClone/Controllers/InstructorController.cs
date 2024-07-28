@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UdemyClone.Dto;
 using UdemyClone.Entities;
 using UdemyClone.Models;
 using UdemyClone.Services.IServices;
@@ -65,26 +64,31 @@ namespace UdemyClone.Controllers
 
         [HttpPut("Update-Course")]
         [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] CourseDto courseDto)
+        public async Task<IActionResult> UpdateCourse([FromBody] CourseModel model)
         {
-            if (id == Guid.Empty)
-                return BadRequest("Course ID cannot be empty.");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             var instructorId = GetIdFromToken();
-            var updatedCourse = await instructorService.UpdateCourseAsync(courseDto);
+
+            var updatedCourse = await instructorService.UpdateCourseAsync(model, instructorId);
 
             if (updatedCourse == null)
-                return NotFound("Course not found or not created by this instructor.");
+            {
+                return NotFound("Course not found or you do not have permission to update this course.");
+            }
 
             return Ok(updatedCourse);
         }
 
-        [HttpGet("Get-Courses-By-Instructor")]
+
+        [HttpGet("Get-My-Courses-Instructor")]
         [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> GetCoursesByInstructor(Guid instructorId)
+        public async Task<IActionResult> GetCoursesByInstructor()
         {
-            if (instructorId == Guid.Empty)
-                return BadRequest("Instructor ID cannot be empty.");
+            var instructorId = GetIdFromToken();
 
             var courses = await instructorService.GetCoursesByInstructorAsync(instructorId);
 
@@ -93,6 +97,29 @@ namespace UdemyClone.Controllers
 
             return Ok(courses);
         }
+
+        [HttpGet("My-Courses-Enrollments")]
+        [Authorize(Roles = "Instructor")]
+        public async Task<IActionResult> GetInstructorCoursesEnrollments()
+        {
+            var instructorId = GetIdFromToken();
+
+            if (instructorId == Guid.Empty)
+            {
+                return Unauthorized("Instructor ID not found.");
+            }
+
+            // Retrieve enrollments for the instructor's courses
+            var enrollments = await instructorService.GetInstructorCoursesEnrollmentsAsync(instructorId);
+
+            if (enrollments == null || !enrollments.Any())
+            {
+                return NotFound("No enrollments found for your courses.");
+            }
+
+            return Ok(enrollments);
+        }
+
 
         [HttpDelete("Delete-Course")]
         [Authorize(Roles = "Instructor")]

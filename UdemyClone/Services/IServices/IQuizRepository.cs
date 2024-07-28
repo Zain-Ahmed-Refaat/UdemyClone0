@@ -4,6 +4,7 @@ namespace UdemyClone.Services.IServices
 {
     public interface IQuizRepository
     {
+        Task<StudentQuiz> GetLatestStudentQuizAttemptAsync(Guid quizId, Guid studentId);
         Task<StudentQuiz> GetStudentQuizAsync(Guid studentId, Guid quizId);
         Task AddStudentAnswerAsync(StudentAnswer studentAnswer);
         Task UpdateStudentQuizAsync(StudentQuiz studentQuiz);

@@ -2,6 +2,7 @@
 using UdemyClone.Data;
 using UdemyClone.Dto;
 using UdemyClone.Entities;
+using UdemyClone.Models;
 using UdemyClone.Services.IServices;
 
 namespace UdemyClone.Services
@@ -41,23 +42,49 @@ namespace UdemyClone.Services
             return course;
         }
 
-        public async Task<Course> UpdateCourseAsync(CourseDto courseDto)
+        public async Task<Course> UpdateCourseAsync(CourseModel model, Guid instructorId)
         {
             var course = await context.Courses
-                .Where(c => c.Id == courseDto.Id && c.InstructorId == courseDto.InstructorId)
+                .Where(c => c.Id == model.Id && c.InstructorId == instructorId)
                 .FirstOrDefaultAsync();
 
             if (course == null)
                 return null;
 
-            course.Name = courseDto.Name;
-            course.Description = courseDto.Description;
+            course.Name = model.Name;
+            course.Description = model.Description;
 
             context.Courses.Update(course);
             await context.SaveChangesAsync();
 
             return course;
         }
+
+
+        public async Task<IEnumerable<CourseEnrollmentsDto>> GetInstructorCoursesEnrollmentsAsync(Guid instructorId)
+        {
+            var courses = await context.Courses
+                .Where(c => c.InstructorId == instructorId)
+                .Include(c => c.StudentCourses) 
+                .ThenInclude(sc => sc.Student)
+                .ToListAsync();
+
+            // Map the data to the DTO
+            var courseEnrollments = courses.Select(course => new CourseEnrollmentsDto
+            {
+                CourseId = course.Id,
+                CourseName = course.Name,
+                Enrollments = course.StudentCourses.Select(sc => new StudentDto
+                {
+                    Id = sc.Student.Id,
+                    UserName = sc.Student.UserName,
+                    Email = sc.Student.Email
+                }).ToList()
+            }).ToList();
+
+            return courseEnrollments;
+        }
+
 
         public async Task<IEnumerable<CourseDto>> GetCoursesByInstructorAsync(Guid instructorId)
         {
@@ -67,7 +94,9 @@ namespace UdemyClone.Services
                 {
                     Id = c.Id,
                     Name = c.Name,
-                    Description = c.Description
+                    Description = c.Description,
+                    InstructorId = instructorId,
+                    Topic = c.Topic.Name
                 })
                 .ToListAsync();
         }

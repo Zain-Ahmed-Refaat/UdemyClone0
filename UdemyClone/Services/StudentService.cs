@@ -10,12 +10,58 @@ namespace UdemyClone.Services
     public class StudentService : IStudentService
     {
         private readonly ApplicationDbContext context;
-        private readonly IQuizRepository _quizRepository;
 
-        public StudentService(ApplicationDbContext context, IQuizRepository quizRepository)
+        public StudentService(ApplicationDbContext context)
         {
             this.context = context;
-            this._quizRepository = quizRepository;
+        }
+
+        public async Task<IEnumerable<StudentDto>> GetCourseEnrollmentsAsync(Guid courseId)
+        {
+            var enrollments = await context.StudentCourses
+                .Where(sc => sc.CourseId == courseId)
+                .Include(sc => sc.Student)
+                .Select(sc => new StudentDto
+                {
+                    Id = sc.Student.Id,
+                    UserName = sc.Student.UserName,
+                    Email = sc.Student.Email
+                })
+                .ToListAsync();
+
+            return enrollments;
+        }
+
+        public async Task<dynamic> SearchCoursesAsync(string keyword, int pageNumber, int pageSize)
+        {
+            var lowerKeyword = keyword.ToLower();
+
+            var query = context.Courses
+                .Where(c => c.Name.ToLower().Contains(lowerKeyword) || c.Description.ToLower().Contains(lowerKeyword))
+                .OrderBy(c => c.Name);
+
+            var totalItems = await query.CountAsync();
+
+            var courses = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new CourseDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    Topic = c.Topic.Name
+                })
+                .ToListAsync();
+
+            return new
+            {
+                Courses = courses,
+                TotalItems = totalItems,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize)
+            };
         }
 
         public async Task<LessonDto> GetLessonAsync(Guid studentId, Guid lessonId)
@@ -24,24 +70,29 @@ namespace UdemyClone.Services
                 .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(l => l.Id == lessonId);
 
-            if (lesson == null)
+            if (lesson is null)
             {
                 throw new NotFoundException("Lesson not found.");
             }
 
-           
+            var isEnrolled = await context.StudentCourses
+                .AnyAsync(sc => sc.StudentId == studentId && sc.CourseId == lesson.CourseId);
+
+            if (!isEnrolled)
+            {
+                throw new Exception("You Must Subscribe in This Course To Access This Lesson.");
+            }
+
             if (lesson.Quizzes.Any())
             {
-
                 foreach (var quiz in lesson.Quizzes)
                 {
-
                     var quizResult = await context.StudentQuizzes
                         .FirstOrDefaultAsync(sq => sq.StudentId == studentId && sq.QuizId == quiz.Id);
 
                     if (quizResult == null || !quizResult.Passed)
                     {
-                        throw new UnauthorizedAccessException("You must pass the quizzes to access this lesson.");
+                        throw new UnauthorizedAccessException("You Have To Pass The Quiz to Access This Lesson.");
                     }
                 }
             }
@@ -50,9 +101,11 @@ namespace UdemyClone.Services
             {
                 Name = lesson.Name,
                 Description = lesson.Description,
+                Order = lesson.Order,
                 CourseId = lesson.CourseId
             };
         }
+
 
 
         public async Task<IEnumerable<StudentDto>> GetAllStudentsAsync(int pageNumber, int pageSize)

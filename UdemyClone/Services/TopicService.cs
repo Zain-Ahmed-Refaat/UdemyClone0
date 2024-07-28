@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UdemyClone.Data;
+using UdemyClone.Dto;
 using UdemyClone.Entities;
 using UdemyClone.Services.IServices;
 
@@ -54,19 +55,20 @@ namespace UdemyClone.Services
                 .ToListAsync();
         }
 
-        public async Task<Topic> UpdateTopicAsync(Guid id, string newName)
+        public async Task<Topic> UpdateTopicAsync(UpdateTopicDto updateTopicDto)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentException("Invalid Topic ID.");
 
-            var topic = await context.Topics.FindAsync(id);
+            var topic = await context.Topics
+                .FirstOrDefaultAsync(t => t.Id == updateTopicDto.Id);
+
             if (topic == null)
-                throw new KeyNotFoundException("Topic not found.");
+            {
+                return null;
+            }
 
-            if (string.IsNullOrWhiteSpace(newName))
-                throw new ArgumentException("New Topic name cannot be null or empty.");
+            topic.Name = updateTopicDto.Name;
+            topic.SubCategoryId = updateTopicDto.SubCategoryId;
 
-            topic.Name = newName;
             context.Topics.Update(topic);
             await context.SaveChangesAsync();
 

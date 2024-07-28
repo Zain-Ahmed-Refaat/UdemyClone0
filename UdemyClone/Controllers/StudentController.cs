@@ -47,6 +47,50 @@ namespace UdemyClone.Controllers
             }
         }
 
+        [HttpGet("Search-Courses")]
+        public async Task<IActionResult> SearchCourses(string keyword, int pageNumber = 1, int pageSize = 10)
+        {
+
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return BadRequest("Keyword is required.");
+            }
+
+            if (pageNumber <= 0)
+            {
+                return BadRequest("Page number must be greater than zero.");
+            }
+
+            if (pageSize <= 0)
+            {
+                return BadRequest("Page size must be greater than zero.");
+            }
+
+            var result = await studentService.SearchCoursesAsync(keyword, pageNumber, pageSize);
+
+            if (!result.Courses.Any())
+            {
+                return NotFound("No courses found for the given search criteria.");
+            }
+
+            return Ok(result);
+        }
+
+        [HttpGet("View-Enrollments")]
+        [Authorize(Roles = "Student")] // Ensuring only students can access this endpoint
+        public async Task<IActionResult> GetCourseEnrollments(Guid courseId)
+        {
+            // Retrieve enrollments for the course
+            var enrollments = await studentService.GetCourseEnrollmentsAsync(courseId);
+
+            if (enrollments == null || !enrollments.Any())
+            {
+                return NotFound("No enrollments found for this course.");
+            }
+
+            return Ok(enrollments);
+        }
+
         [HttpPost("Enroll-Course")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> Enroll(Guid courseId)
@@ -177,7 +221,7 @@ namespace UdemyClone.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(400, ex.Message);
+                return BadRequest(ex.Message);
             }
         }
 

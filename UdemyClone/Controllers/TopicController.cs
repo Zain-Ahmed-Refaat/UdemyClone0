@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using UdemyClone.Dto;
 using UdemyClone.Services.IServices;
 
@@ -72,25 +73,33 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpPatch("Update-Topic")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateTopic(Guid id, [FromBody] UpdateTopicDto dto)
+        [HttpPut("Update-Topic")]
+        [Authorize(Roles = "Admin, Instructor")]
+        public async Task<IActionResult> UpdateTopic([FromBody] UpdateTopicDto updateTopicDto)
         {
-            if (id == Guid.Empty || string.IsNullOrWhiteSpace(dto?.NewName))
-                return BadRequest("Invalid data.");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             try
             {
-                var updatedTopic = await topicService.UpdateTopicAsync(id, dto.NewName);
+                var updatedTopic = await topicService.UpdateTopicAsync(updateTopicDto);
+
+                if (updatedTopic == null)
+                {
+                    return NotFound("Topic not found.");
+                }
+
                 return Ok(updatedTopic);
             }
-            catch (ArgumentException ex)
+            catch (DbUpdateException dbEx)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, dbEx.InnerException?.Message ?? dbEx.Message);
             }
-            catch (KeyNotFoundException ex)
+            catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                return StatusCode(500, ex.Message);
             }
         }
 

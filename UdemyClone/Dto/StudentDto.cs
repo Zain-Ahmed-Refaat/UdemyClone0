@@ -13,7 +13,6 @@ namespace UdemyClone.Dto
     public class EnrollmentDto
     {
         public Guid CourseId { get; set; }
-        public Course Course { get; set; } 
         public string CourseName { get; set; }
     }
 

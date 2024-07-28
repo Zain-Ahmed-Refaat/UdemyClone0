@@ -1,4 +1,6 @@
-﻿namespace UdemyClone.Dto
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UdemyClone.Dto
 {
     public class CreateTopicDto
     {
@@ -8,6 +10,14 @@
 
     public class UpdateTopicDto
     {
-        public string NewName { get; set; }
+        [Required]
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Topic name is required.")]
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "Topic name must be between 3 and 100 characters.")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "SubCategoryId is required.")]
+        public Guid SubCategoryId { get; set; }
     }
 }

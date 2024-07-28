@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using UdemyClone.Dto;
 using UdemyClone.Services.IServices;
 
@@ -72,25 +73,34 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpPatch("Update-SubCategory")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateSubCategory(Guid id, [FromBody] UpdateSubCategoryDto dto)
+        [HttpPut("Update-SubCategory")]
+        [Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> UpdateSubCategory([FromBody] SubCategoryUpdateDto updateDto)
         {
-            if (id == Guid.Empty || string.IsNullOrWhiteSpace(dto?.NewName))
-                return BadRequest("Invalid data.");
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             try
             {
-                var updatedSubCategory = await subCategoryService.UpdateSubCategoryAsync(id, dto.NewName);
+                var updatedSubCategory = await subCategoryService.UpdateSubCategoryAsync(updateDto);
+
+                if (updatedSubCategory == null)
+                {
+                    return NotFound("SubCategory not found.");
+                }
+
                 return Ok(updatedSubCategory);
             }
-            catch (ArgumentException ex)
+            catch (DbUpdateException dbEx)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, dbEx.InnerException?.Message ?? dbEx.Message);
             }
-            catch (KeyNotFoundException ex)
+            catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                return StatusCode(500, ex.Message);
             }
         }
 
