@@ -40,6 +40,8 @@ namespace UdemyClone.Services
         {
             // Retrieve quiz by ID
             return await _context.Quizzes
+                .Include(q => q.Lesson)
+                .ThenInclude(q => q.Course)
                 .Include(q => q.Questions)
                 .ThenInclude(q => q.Answers)
                 .FirstOrDefaultAsync(q => q.Id == id);

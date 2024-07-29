@@ -46,6 +46,18 @@ namespace UdemyClone.Controllers
             return Ok(new { result.Roles, result.Token, result.ExpirationDate });
         }
 
+        [HttpGet("Get-Roles")]
+        [Authorize(Roles = "Admin")]
+        public ActionResult<IEnumerable<string>> GetRoles()
+        {
+            var roles = Enum.GetValues(typeof(UserRole))
+                .Cast<UserRole>()
+                .Select(role => $"{role} {(int)role}")
+                .ToList();
+
+            return Ok(roles);
+        }
+
         [HttpPost("Add-Role-To-User")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddRoleAsync([FromBody] AddRoleModel model)

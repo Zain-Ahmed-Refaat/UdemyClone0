@@ -103,28 +103,6 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpDelete("Delete-Topic")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteTopic(Guid id)
-        {
-            if (id == Guid.Empty)
-                return BadRequest("Invalid Topic ID.");
-
-            try
-            {
-                var result = await topicService.DeleteTopicAsync(id);
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-        }
-
         [HttpGet("Search-Topics")]
         public async Task<IActionResult> SearchTopics([FromQuery] string searchTerm)
         {
@@ -156,5 +134,28 @@ namespace UdemyClone.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpDelete("Delete-Topic")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteTopic(Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest("Invalid Topic ID.");
+
+            try
+            {
+                var result = await topicService.DeleteTopicAsync(id);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
     }
 }

@@ -12,11 +12,13 @@ namespace UdemyClone.Services
     {
         private readonly ApplicationDbContext context;
         private readonly IQuizRepository _quizRepository;
+        private readonly IStudentService studentService;
 
-        public QuizService(ApplicationDbContext context, IQuizRepository quizRepository)
+        public QuizService(ApplicationDbContext context, IQuizRepository quizRepository, IStudentService studentService)
         {
             this.context = context;
             this._quizRepository = quizRepository;
+            this.studentService = studentService;
         }
 
         public async Task<bool> CanStudentRetakeQuizAsync(Guid quizId, Guid studentId)
@@ -31,11 +33,23 @@ namespace UdemyClone.Services
         }
 
 
-        public async Task<string> RetakeQuizAsync(Guid quizId, Guid studentId)
+        public async Task<string> RetakeQuizAsync(Guid quizId, SubmitQuizRequest request, Guid studentId)
         {
             var quiz = await _quizRepository.GetByIdAsync(quizId);
             if (quiz == null)
                 throw new NotFoundException("Quiz not found.");
+
+            var courseId = quiz.Lesson.CourseId;
+
+            if (courseId == Guid.Empty)
+                throw new ArgumentNullException(nameof(courseId), "Course ID cannot be empty.");
+
+
+            bool isEnrolled = await IsStudentEnrolledInCourseAsync(studentId, courseId);
+            if (!isEnrolled)
+            {
+                throw new Exception("You are not Enrolled in the Course Associated with This quiz.");
+            }
 
             var lastAttempt = await _quizRepository.GetLatestStudentQuizAttemptAsync(quizId, studentId);
             if (lastAttempt == null || lastAttempt.Passed)
@@ -53,8 +67,36 @@ namespace UdemyClone.Services
 
             await _quizRepository.AddStudentQuizAsync(studentQuiz);
 
+            int correctAnswers = 0;
 
-            return $"Quiz Retake Allowed. Please Submit Your Answers!";
+            foreach (var answer in request.Answers)
+            {
+                var question = quiz.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
+                if (question == null)
+                    continue;
+
+                bool isCorrect = question.CorrectAnswerId == answer.AnswerId;
+
+                var studentAnswer = new StudentAnswer
+                {
+                    Id = Guid.NewGuid(),
+                    StudentQuizId = studentQuiz.Id,
+                    QuestionId = answer.QuestionId,
+                    AnswerId = answer.AnswerId,
+                };
+
+                await _quizRepository.AddStudentAnswerAsync(studentAnswer);
+
+                if (isCorrect)
+                    correctAnswers++;
+            }
+
+            studentQuiz.Score = correctAnswers;
+            studentQuiz.Passed = correctAnswers >= (quiz.Questions.Count * 0.7);
+
+            await _quizRepository.UpdateStudentQuizAsync(studentQuiz);
+
+            return studentQuiz.Passed ? "You passed the quiz!" : "You did not pass the quiz.";
         }
 
 
@@ -85,38 +127,66 @@ namespace UdemyClone.Services
             return quiz.Id;
         }
 
-        public async Task<QuizDto> GetQuizByIdAsync(Guid quizId)
+        public async Task<QuizDto> GetQuizByIdAsync(Guid quizId, Guid studentId)
         {
+            if (quizId == Guid.Empty)
+                throw new ArgumentNullException(nameof(quizId), "Quiz ID cannot be empty.");
+
             var quiz = await _quizRepository.GetByIdAsync(quizId);
+
             if (quiz == null)
-                throw new ArgumentNullException("Quiz not found.");
+                throw new ArgumentNullException(nameof(quiz), "Quiz not found.");
+
+            if (quiz.Lesson == null)
+                throw new ArgumentNullException(nameof(quiz.Lesson), "Lesson associated with the quiz cannot be null.");
+
+            var courseId = quiz.Lesson.CourseId;
+
+            if (courseId == Guid.Empty)
+                throw new ArgumentNullException(nameof(courseId), "Course ID cannot be empty.");
+
+            bool isEnrolled = await IsStudentEnrolledInCourseAsync(studentId, courseId);
+            if (!isEnrolled)
+            {
+                throw new Exception("You are not Enrolled in the Course Associated with This quiz.");
+            }
 
             return new QuizDto
             {
                 Id = quiz.Id,
                 Title = quiz.Title,
                 Description = quiz.Description,
-                Questions = quiz.Questions.Select(q => new QuestionDto
+                Questions = quiz.Questions?.Select(q => new QuestionDto
                 {
                     Id = q.Id,
                     Text = q.Text,
-                    Answers = q.Answers.Select(a => new AnswerDto
+                    Answers = q.Answers?.Select(a => new AnswerDto
                     {
                         Id = a.Id,
                         Text = a.Text
                     }).ToList()
-                }).ToList()
+                }).ToList() ?? new List<QuestionDto>()
             };
         }
 
+        private async Task<bool> IsStudentEnrolledInCourseAsync(Guid studentId, Guid courseId)
+        {
+            if (studentId == Guid.Empty || courseId == Guid.Empty)
+                return false;
+
+            var enrolledCourses = await studentService.GetCoursesByStudentAsync(studentId);
+            return enrolledCourses?.Any(c => c.Id == courseId) ?? false;
+        }
+
+
         public async Task CreateQuizAsync(CreateQuizRequest request)
         {
-            // Prepare the questions list
+
             var questions = new List<Question>();
 
             foreach (var q in request.Questions)
             {
-                // Create answers from request
+
                 var answers = q.Answers.Select(a => new Answer
                 {
                     Text = a.Text,
@@ -124,7 +194,6 @@ namespace UdemyClone.Services
 
                 }).ToList();
 
-                // Check for exactly one correct answer
                 var correctAnswers = answers.Where(a => a.IsCorrect).ToList();
                 if (correctAnswers.Count != 1)
                 {
@@ -152,10 +221,8 @@ namespace UdemyClone.Services
 
             await _quizRepository.AddAsync(quiz);
 
-            // Update CorrectAnswerId after saving
             foreach (var question in quiz.Questions)
             {
-                // Retrieve the correct answer ID from the question's answers
                 var correctAnswer = question.Answers.FirstOrDefault(a => a.IsCorrect);
                 if (correctAnswer != null)
                 {
@@ -163,7 +230,6 @@ namespace UdemyClone.Services
                 }
             }
 
-            // Update the quiz with correct answer IDs
             await _quizRepository.UpdateAsync(quiz);
         }
 
@@ -173,6 +239,18 @@ namespace UdemyClone.Services
             var quiz = await _quizRepository.GetByIdAsync(quizId);
             if (quiz == null)
                 throw new NotFoundException("Quiz not found.");
+
+            var courseId = quiz.Lesson.CourseId;
+
+            if (courseId == Guid.Empty)
+                throw new ArgumentNullException(nameof(courseId), "Course ID cannot be empty.");
+
+
+            bool isEnrolled = await IsStudentEnrolledInCourseAsync(studentId, courseId);
+            if (!isEnrolled)
+            {
+                throw new Exception("You are not Enrolled in the Course Associated with This quiz.");
+            }
 
             var lastAttempt = await _quizRepository.GetLatestStudentQuizAttemptAsync(quizId, studentId);
 
@@ -223,8 +301,6 @@ namespace UdemyClone.Services
             return "Quiz Submitted Successfully!\nCheck Your Results!";
         }
 
-
-
         public async Task<QuizResultDto> GetQuizResultAsync(Guid quizId, Guid studentId)
         {
             var studentQuiz = await _quizRepository.GetStudentQuizAsync(studentId, quizId);
@@ -238,6 +314,37 @@ namespace UdemyClone.Services
                 DateTaken = studentQuiz.DateTaken
             };
         }
+
+        public async Task<bool> IsInstructorOwnerOfQuizAsync(Guid instructorId, Guid quizId)
+        {
+            var quiz = await context.Quizzes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(q => q.Id == quizId);
+
+            if (quiz == null)
+            {
+                return false;
+            }
+
+            return quiz.Lesson.Course.InstructorId == instructorId;
+        }
+
+        public async Task<List<QuizResultDto>> GetQuizResultsByIdAsync(Guid quizId)
+        {
+            var quizResults = await context.StudentQuizzes
+                .Where(sq => sq.QuizId == quizId)
+                .Select(sq => new QuizResultDto
+                {
+                    StudentId = sq.StudentId,
+                    Score = sq.Score,
+                    Passed = sq.Passed,
+                    DateTaken = sq.DateTaken
+                })
+                .ToListAsync();
+
+            return quizResults;
+        }
+
 
         public async Task DeleteQuizAsync(Guid quizId)
         {

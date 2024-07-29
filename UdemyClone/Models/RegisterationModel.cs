@@ -20,7 +20,7 @@ namespace UdemyClone.Models
         public string ConfirmPassword { get; set; }
 
         [Required]
-        public UserRole Role { get; set; }
+        public UserRole? Role { get; set; } = UserRole.User;
     }
 
     public enum UserRole

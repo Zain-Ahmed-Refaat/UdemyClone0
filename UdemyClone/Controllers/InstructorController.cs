@@ -83,7 +83,6 @@ namespace UdemyClone.Controllers
             return Ok(updatedCourse);
         }
 
-
         [HttpGet("Get-My-Courses-Instructor")]
         [Authorize(Roles = "Instructor")]
         public async Task<IActionResult> GetCoursesByInstructor()
@@ -109,7 +108,6 @@ namespace UdemyClone.Controllers
                 return Unauthorized("Instructor ID not found.");
             }
 
-            // Retrieve enrollments for the instructor's courses
             var enrollments = await instructorService.GetInstructorCoursesEnrollmentsAsync(instructorId);
 
             if (enrollments == null || !enrollments.Any())
@@ -118,39 +116,6 @@ namespace UdemyClone.Controllers
             }
 
             return Ok(enrollments);
-        }
-
-
-        [HttpDelete("Delete-Course")]
-        [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> DeleteCourse(Guid id)
-        {
-            if (id == Guid.Empty)
-                return BadRequest("Course ID cannot be empty.");
-
-            var instructorId = GetIdFromToken();
-
-            var result = await instructorService.DeleteCourseAsync(id, instructorId);
-
-            if (!result)
-                return NotFound("Course not found or not created by this instructor.");
-
-            return NoContent();
-        }
-
-        [HttpGet("Get-Course-By-Id")]
-        [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> GetCourseById(Guid id)
-        {
-            if (id == Guid.Empty)
-                return BadRequest("Course ID cannot be empty.");
-
-            var course = await instructorService.GetCourseByIdAsync(id);
-
-            if (course == null)
-                return NotFound("Course not found.");
-
-            return Ok(course);
         }
 
         [HttpGet("Get-All-Courses")]
@@ -169,6 +134,38 @@ namespace UdemyClone.Controllers
             }
 
             return NotFound("No courses found.");
+        }
+
+        [HttpGet("Get-Course-By-Id")]
+        [Authorize(Roles = "Instructor")]
+        public async Task<IActionResult> GetCourseById(Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest("Course ID cannot be empty.");
+
+            var course = await instructorService.GetCourseByIdAsync(id);
+
+            if (course == null)
+                return NotFound("Course not found.");
+
+            return Ok(course);
+        }
+
+        [HttpDelete("Delete-Course")]
+        [Authorize(Roles = "Instructor")]
+        public async Task<IActionResult> DeleteCourse(Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest("Course ID cannot be empty.");
+
+            var instructorId = GetIdFromToken();
+
+            var result = await instructorService.DeleteCourseAsync(id, instructorId);
+
+            if (!result)
+                return NotFound("Course not found or not created by this instructor.");
+
+            return NoContent();
         }
 
         private Guid GetIdFromToken()

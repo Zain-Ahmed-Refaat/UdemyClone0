@@ -4,6 +4,7 @@ namespace UdemyClone.Services.IServices
 {
     public interface IStudentService
     {
+        Task<IEnumerable<LessonDto>> GetLessonsByCourseAsync(Guid studentId, Guid courseId, int pageNumber, int pageSize);
         Task<IEnumerable<StudentDto>> GetAllStudentsAsync(int pageNumber, int pageSize);
         Task<dynamic> SearchCoursesAsync(string keyword, int pageNumber, int pageSize);
         Task<IEnumerable<StudentDto>> GetCourseEnrollmentsAsync(Guid courseId);

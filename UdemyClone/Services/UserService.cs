@@ -5,6 +5,7 @@ using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 using UdemyClone.Data;
 using UdemyClone.Entities;
 using UdemyClone.Models;
@@ -32,27 +33,50 @@ namespace UdemyClone.Services
         {
 
             var userEmail = await userManager.FindByEmailAsync(model.Email);
-            if (userEmail != null)
-            {
-                return new UserManagerResponse { Message = $"{model.Email} is already registered!" };
-            }
-
-
             var userName = await userManager.FindByNameAsync(model.Username);
-            if (userName != null)
+
+
+            switch (userEmail, userName)
             {
-                return new UserManagerResponse { Message = $"Username {model.Username} is already taken. Please try another name." };
+                case (not null, _):
+                    return new UserManagerResponse { Message = $"{model.Email} is already registered!" };
+
+                case (_, not null):
+                    return new UserManagerResponse { Message = $"Username is already taken. Please try another name." };
             }
 
-            if (model == null)
+            switch (model)
             {
-                throw new ArgumentNullException("Please provide valid data.");
-            }
-            if (model.Password != model.ConfirmPassword)
-            {
-                return new UserManagerResponse { Message = "The password and confirmation password do not match." };
-            }
+                case null:
+                    throw new ArgumentNullException(nameof(model), "Please provide valid data.");
 
+                case { Email: null or "" }:
+                    throw new ArgumentNullException(nameof(model.Email), "Email Field Is Required");
+
+                case { Email: var email } when !IsValidEmail(email):
+                    return new UserManagerResponse { Message = "Please provide a valid email address." };
+
+                case { Username: null or "" }:
+                    throw new ArgumentNullException(nameof(model.Username), "Username Field Is Required");
+
+                case { Password: null }:
+                    throw new ArgumentNullException(nameof(model.Password), "Password Field Is Required");
+
+                case { ConfirmPassword: null }:
+                    throw new ArgumentNullException(nameof(model.ConfirmPassword), "Confirm Password Field Is Required");
+
+                case { Password: var pwd, ConfirmPassword: var confirmPwd } when pwd != confirmPwd:
+                    return new UserManagerResponse { Message = "The password and confirmation password do not match." };
+
+                case { Role: UserRole.Admin }:
+                    return new UserManagerResponse {
+                        Message = "You Cannot Register as an Admin.",
+                        isAuthenticated = false
+                    };
+
+                default:
+                    break;
+            }
 
             var user = new User
             {
@@ -98,6 +122,11 @@ namespace UdemyClone.Services
             }
         }
 
+        private bool IsValidEmail(string email)
+        {
+            return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        }
+
 
         private async Task<JwtSecurityToken> GenerateJwtToken(User user)
              {
@@ -139,32 +168,38 @@ namespace UdemyClone.Services
         public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
         {
             var userResponse = new UserManagerResponse();
-
-            if (model == null)
+            var response = model switch
             {
-                return new UserManagerResponse
+                null => new UserManagerResponse
                 {
                     Message = "Login model cannot be null.",
                     isAuthenticated = false
-                };
-            }
+                },
 
-            if (string.IsNullOrEmpty(model.Email))
-            {
-                return new UserManagerResponse
+                { Email: null or "" } => new UserManagerResponse
                 {
                     Message = "Email cannot be empty.",
                     isAuthenticated = false
-                };
-            }
+                },
 
-            if (string.IsNullOrEmpty(model.Password))
-            {
-                return new UserManagerResponse
+                { Email: var email } when !IsValidEmail(email) => new UserManagerResponse
+                {
+                    Message = "Please provide a valid email address.",
+                    isAuthenticated = false
+                },
+
+                { Password: null or "" } => new UserManagerResponse
                 {
                     Message = "Password cannot be empty.",
                     isAuthenticated = false
-                };
+                },
+
+                _ => null
+            };
+
+            if (response != null)
+            {
+                return response;
             }
 
             var user = await userManager.FindByEmailAsync(model.Email);

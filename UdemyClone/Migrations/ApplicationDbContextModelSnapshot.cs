@@ -173,7 +173,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("Answers");
+                    b.ToTable("Answers", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Category", b =>
@@ -188,7 +188,7 @@ namespace UdemyClone.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Course", b =>
@@ -217,7 +217,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("TopicId");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Lesson", b =>
@@ -244,7 +244,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("Lessons");
+                    b.ToTable("Lessons", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Question", b =>
@@ -269,7 +269,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Quiz", b =>
@@ -293,7 +293,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("LessonId");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.StudentAnswer", b =>
@@ -319,7 +319,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("StudentQuizId");
 
-                    b.ToTable("StudentAnswers");
+                    b.ToTable("StudentAnswers", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.StudentCourse", b =>
@@ -334,7 +334,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("StudentCourses");
+                    b.ToTable("StudentCourses", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.StudentLessonProgress", b =>
@@ -358,7 +358,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("StudentLessonProgresses");
+                    b.ToTable("StudentLessonProgresses", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.StudentQuiz", b =>
@@ -388,7 +388,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("StudentQuizzes");
+                    b.ToTable("StudentQuizzes", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.SubCategory", b =>
@@ -408,7 +408,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("SubCategories");
+                    b.ToTable("SubCategories", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.Topic", b =>
@@ -428,7 +428,7 @@ namespace UdemyClone.Migrations
 
                     b.HasIndex("SubCategoryId");
 
-                    b.ToTable("Topics");
+                    b.ToTable("Topics", (string)null);
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.User", b =>

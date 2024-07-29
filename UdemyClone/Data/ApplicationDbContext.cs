@@ -15,7 +15,6 @@ namespace UdemyClone.Data
         public DbSet<StudentCourse> StudentCourses { get; set; }
         public DbSet<SubCategory> SubCategories { get; set; }
         public DbSet<Topic> Topics { get; set; }
-        public DbSet<StudentLessonProgress> StudentLessonProgresses { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<Answer> Answers { get; set; }
         public DbSet<StudentAnswer> StudentAnswers { get; set; }
@@ -71,6 +70,12 @@ namespace UdemyClone.Data
                 .HasMany(q => q.Answers)
                 .WithOne(a => a.Question)
                 .HasForeignKey(a => a.QuestionId);
+
+            modelBuilder.Entity<Lesson>()
+                 .HasMany(l => l.Quizzes)
+                 .WithOne(q => q.Lesson)
+                 .OnDelete(DeleteBehavior.Cascade);
+
 
         }
 

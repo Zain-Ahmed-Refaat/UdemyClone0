@@ -75,6 +75,38 @@ namespace UdemyClone.Controllers
             }
         }
 
+        [HttpGet("Search-Categories")]
+        public async Task<IActionResult> SearchCategories([FromQuery] string searchTerm)
+        {
+            try
+            {
+                var categories = await categoryService.SearchCategoriesAsync(searchTerm);
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("Category-Exists")]
+        public async Task<IActionResult> CategoryExists(Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest("Invalid category ID.");
+
+            var exists = await categoryService.CategoryExistsAsync(id);
+            return Ok(new { Exists = exists });
+        }
+
+        [HttpGet("Get-Category-Count")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetCategoryCount()
+        {
+            var count = await categoryService.GetCategoryCountAsync();
+            return Ok(new { Count = count });
+        }
+
         [HttpDelete("Delete-Category")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCategory(Guid categoryId)
@@ -92,40 +124,6 @@ namespace UdemyClone.Controllers
             {
                 return NotFound(ex.Message);
             }
-        }
-
-        [HttpGet("Search-Categories")]
-        public async Task<IActionResult> SearchCategories([FromQuery] string searchTerm)
-        {
-            try
-            {
-                var categories = await categoryService.SearchCategoriesAsync(searchTerm);
-                return Ok(categories);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-
-        [HttpGet("Category-Exists")]
-        public async Task<IActionResult> CategoryExists(Guid id)
-        {
-            if (id == Guid.Empty)
-                return BadRequest("Invalid category ID.");
-
-            var exists = await categoryService.CategoryExistsAsync(id);
-            return Ok(new { Exists = exists });
-        }
-
-
-        [HttpGet("Get-Category-Count")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetCategoryCount()
-        {
-            var count = await categoryService.GetCategoryCountAsync();
-            return Ok(new { Count = count });
         }
 
     }

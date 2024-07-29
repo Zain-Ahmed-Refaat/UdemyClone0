@@ -20,18 +20,39 @@ namespace UdemyClone.Controllers
         }
 
         [HttpGet("View-Quiz")]
-        [Authorize]
+        [Authorize(Roles = "Student")]
         public async Task<IActionResult> GetQuiz(Guid lessonId)
         {
+            var studentId = GetIdFromToken();
+
+            if (lessonId == Guid.Empty)
+                return BadRequest("Lesson ID cannot be empty.");
+
             try
             {
                 var quizId = await _quizService.GetQuizIdByLessonIdAsync(lessonId);
-                var quiz = await _quizService.GetQuizByIdAsync(quizId);
+
+                if (quizId == Guid.Empty)
+                    return BadRequest("Quiz ID is null or empty.");
+
+                var quiz = await _quizService.GetQuizByIdAsync(quizId, studentId);
+
+                if (quiz == null)
+                    return NotFound("Quiz not found.");
+
                 return Ok(quiz);
             }
-            catch (NotFoundException ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return NotFound(ex.Message);
+                return Forbid(ex.Message);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
             }
         }
 
@@ -81,10 +102,9 @@ namespace UdemyClone.Controllers
             }
         }
 
-
         [HttpPost("Retake-Quiz")]
         [Authorize(Roles = "Student")]
-        public async Task<IActionResult> RetakeQuiz([FromQuery] Guid quizId)
+        public async Task<IActionResult> RetakeQuiz([FromQuery] Guid quizId, [FromBody] SubmitQuizRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -93,11 +113,7 @@ namespace UdemyClone.Controllers
 
             try
             {
-                var canRetake = await _quizService.CanStudentRetakeQuizAsync(quizId, studentId);
-                if (!canRetake)
-                    return BadRequest("You have already passed this quiz or have not attempted it yet.");
-
-                var result = await _quizService.RetakeQuizAsync(quizId, studentId);
+                var result = await _quizService.RetakeQuizAsync(quizId, request, studentId);
                 return Ok(result);
             }
             catch (NotFoundException ex)
@@ -106,7 +122,6 @@ namespace UdemyClone.Controllers
             }
             catch (DbUpdateException dbEx)
             {
-                // Log the error with detailed inner exception
                 return StatusCode(500, dbEx.InnerException?.Message ?? dbEx.Message);
             }
             catch (Exception ex)
@@ -115,8 +130,7 @@ namespace UdemyClone.Controllers
             }
         }
 
-
-        [HttpGet("See-Quiz-Result")]
+        [HttpGet("View-Quiz-Result-Student")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> GetQuizResult(Guid quizId)
         {
@@ -133,8 +147,32 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpDelete("Delete-Quiz")]
+        [HttpGet("View-Quiz-Result-Instructor")]
         [Authorize(Roles = "Instructor")]
+        public async Task<IActionResult> GetQuizResults(Guid quizId)
+        {
+            var instructorId = GetIdFromToken();
+
+            var isOwner = await _quizService.IsInstructorOwnerOfQuizAsync(instructorId, quizId);
+
+            if (!isOwner)
+            {
+                return Unauthorized("You do not have permission to view this quiz.");
+            }
+
+            var quizResults = await _quizService.GetQuizResultsByIdAsync(quizId);
+
+            if (quizResults == null || !quizResults.Any())
+            {
+                return NotFound("No results found for this quiz.");
+            }
+
+            return Ok(quizResults);
+        }
+
+
+        [HttpDelete("Delete-Quiz")]
+        [Authorize(Roles = "Admin, Instructor")]
         public async Task<IActionResult> DeleteQuiz(Guid quizId)
         {
             try

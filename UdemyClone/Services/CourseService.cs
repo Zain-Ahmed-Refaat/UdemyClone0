@@ -39,11 +39,12 @@ namespace UdemyClone.Services
             if (existingLesson != null)
                 throw new InvalidOperationException($"A lesson with the name '{model.Name}' already exists in this course.");
 
+
             var lesson = new Lesson
             {
                 Name = model.Name,
                 Description = model.Description,
-                CourseId = model.CourseId
+                CourseId = model.CourseId,
             };
 
             context.Lessons.Add(lesson);
@@ -51,7 +52,6 @@ namespace UdemyClone.Services
 
             return lesson;
         }
-
 
         public async Task<IEnumerable<Lesson>> GetAllLessonsAsync(Guid instructorId, int pageNumber, int pageSize)
         {
@@ -81,13 +81,14 @@ namespace UdemyClone.Services
         {
             var lesson = await context.Lessons
                 .Include(l => l.Course)
+                .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             if (lesson == null)
                 return null;
 
             if (lesson.Course.InstructorId != instructorId)
-                throw new UnauthorizedAccessException("You do not have permission to access this lesson.");
+                throw new UnauthorizedAccessException("You Do Not Have Permission to Access this Lesson.");
 
             return lesson;
         }

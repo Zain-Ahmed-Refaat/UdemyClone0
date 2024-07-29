@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenQA.Selenium;
 using System.Security.Claims;
 using UdemyClone.Dto;
+using UdemyClone.Services;
 using UdemyClone.Services.IServices;
 
 namespace UdemyClone.Controllers
@@ -47,40 +48,35 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpGet("Search-Courses")]
-        public async Task<IActionResult> SearchCourses(string keyword, int pageNumber = 1, int pageSize = 10)
+        [HttpGet("Get-Student-By-Id")]
+        [Authorize(Roles = "Admin, Instructor")]
+        public async Task<IActionResult> GetStudentById(Guid studentId)
         {
+            var student = await studentService.GetStudentByIdAsync(studentId);
 
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                return BadRequest("Keyword is required.");
-            }
+            return student != null ? Ok(student) : NotFound("Student not found.");
+        }
 
-            if (pageNumber <= 0)
-            {
-                return BadRequest("Page number must be greater than zero.");
-            }
+        [HttpGet("Get-Courses-By-Student")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetCoursesByStudent(Guid studentId)
+        {
+            var courses = await studentService.GetCoursesByStudentAsync(studentId);
 
-            if (pageSize <= 0)
-            {
-                return BadRequest("Page size must be greater than zero.");
-            }
+            return courses != null ? Ok(courses) : NotFound("Student or courses not found.");
+        }
 
+        [HttpGet("Search-Course")]
+        public async Task<IActionResult> SearchCoursesAsync([FromQuery] string keyword, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
             var result = await studentService.SearchCoursesAsync(keyword, pageNumber, pageSize);
-
-            if (!result.Courses.Any())
-            {
-                return NotFound("No courses found for the given search criteria.");
-            }
-
             return Ok(result);
         }
 
-        [HttpGet("View-Enrollments")]
-        [Authorize(Roles = "Student")] // Ensuring only students can access this endpoint
+        [HttpGet("View-Course-Enrollments")]
         public async Task<IActionResult> GetCourseEnrollments(Guid courseId)
         {
-            // Retrieve enrollments for the course
+
             var enrollments = await studentService.GetCourseEnrollmentsAsync(courseId);
 
             if (enrollments == null || !enrollments.Any())
@@ -135,25 +131,6 @@ namespace UdemyClone.Controllers
                 : BadRequest(result);
         }
 
-        [HttpGet("Get-Student-By-Id")]
-        [Authorize(Roles = "Admin, Instructor")]
-        public async Task<IActionResult> GetStudentById(Guid studentId)
-        {
-            var student = await studentService.GetStudentByIdAsync(studentId);
-
-            return student != null ? Ok(student) : NotFound("Student not found.");
-        }
-
-        [HttpDelete("Delete-Student")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteStudent(Guid studentId)
-        {
-            var result = await studentService.DeleteStudentAsync(studentId);
-
-            return result == "Student deleted successfully."
-                ? Ok(result)
-                : NotFound(result);
-        }
 
         [HttpGet("Get-My-Courses")]
         [Authorize(Roles = "Student")]
@@ -165,15 +142,50 @@ namespace UdemyClone.Controllers
             return courses != null ? Ok(courses) : NotFound("Student or courses not found.");
         }
 
-        [HttpGet("Get-Courses-By-Student")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetCoursesByStudent(Guid studentId)
+        [HttpGet("View-Lessons-In-Course")]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> GetLessonsByCourse(Guid courseId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var courses = await studentService.GetCoursesByStudentAsync(studentId);
-
-            return courses != null ? Ok(courses) : NotFound("Student or courses not found.");
+            try
+            {
+                var studentId = GetIdFromToken();
+                var lessons = await studentService.GetLessonsByCourseAsync(studentId, courseId, pageNumber, pageSize);
+                return Ok(lessons);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
+        [HttpGet("Watch-Lesson")]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> GetLesson(Guid lessonId)
+        {
+            var studentId = GetIdFromToken();
+
+            try
+            {
+                var lesson = await studentService.GetLessonAsync(studentId, lessonId);
+                return Ok(lesson);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
         [HttpGet("Get-Quiz-status")]
         [Authorize(Roles = "Student")]
@@ -200,31 +212,16 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpGet("Watch-Lesson")]
-        [Authorize(Roles = "Student")]
-        public async Task<IActionResult> GetLesson(Guid lessonId)
+        [HttpDelete("Delete-Student")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteStudent(Guid studentId)
         {
-            var studentId = GetIdFromToken(); 
+            var result = await studentService.DeleteStudentAsync(studentId);
 
-            try
-            {
-                var lesson = await studentService.GetLessonAsync(studentId, lessonId);
-                return Ok(lesson);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Forbid(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return result == "Student deleted successfully."
+                ? Ok(result)
+                : NotFound(result);
         }
-
 
         private Guid GetIdFromToken()
         {

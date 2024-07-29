@@ -32,12 +32,17 @@ namespace UdemyClone.Services
             return enrollments;
         }
 
-        public async Task<dynamic> SearchCoursesAsync(string keyword, int pageNumber, int pageSize)
+        public async Task<object> SearchCoursesAsync(string keyword, int pageNumber, int pageSize)
         {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                keyword = string.Empty;
+            }
+
             var lowerKeyword = keyword.ToLower();
 
             var query = context.Courses
-                .Where(c => c.Name.ToLower().Contains(lowerKeyword) || c.Description.ToLower().Contains(lowerKeyword))
+                .Where(c => c.Name.ToLower().Contains(lowerKeyword))
                 .OrderBy(c => c.Name);
 
             var totalItems = await query.CountAsync();
@@ -45,11 +50,11 @@ namespace UdemyClone.Services
             var courses = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(c => new CourseDto
+                .Select(c => new
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Description = c.Description,
+                    c.Id,
+                    c.Name,
+                    c.Description,
                     Topic = c.Topic.Name
                 })
                 .ToListAsync();
@@ -63,6 +68,7 @@ namespace UdemyClone.Services
                 TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize)
             };
         }
+
 
         public async Task<LessonDto> GetLessonAsync(Guid studentId, Guid lessonId)
         {
@@ -101,11 +107,44 @@ namespace UdemyClone.Services
             {
                 Name = lesson.Name,
                 Description = lesson.Description,
-                Order = lesson.Order,
                 CourseId = lesson.CourseId
             };
         }
 
+        private async Task<IEnumerable<Lesson>> GetLessonsByCourseAsync(Guid courseId, int pageNumber, int pageSize)
+        {
+            return await context.Lessons
+                .Where(l => l.CourseId == courseId)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        private async Task<bool> IsStudentEnrolledInCourseAsync(Guid studentId, Guid courseId)
+        {
+            var enrolledCourses = await GetCoursesByStudentAsync(studentId);
+            return enrolledCourses.Any(c => c.Id == courseId);
+        }
+
+        public async Task<IEnumerable<LessonDto>> GetLessonsByCourseAsync(Guid studentId, Guid courseId, int pageNumber, int pageSize)
+        {
+
+            var isEnrolled = await IsStudentEnrolledInCourseAsync(studentId, courseId);
+            if (!isEnrolled)
+            {
+                throw new UnauthorizedAccessException("You are not enrolled in this course.");
+            }
+
+
+            var lessons = await GetLessonsByCourseAsync(courseId, pageNumber, pageSize);
+            return lessons.Select(l => new LessonDto
+            {
+                Name = l.Name,
+                Description = l.Description,
+                LessonId = l.Id,
+                CourseId = l.CourseId
+            });
+        }
 
 
         public async Task<IEnumerable<StudentDto>> GetAllStudentsAsync(int pageNumber, int pageSize)
@@ -253,7 +292,8 @@ namespace UdemyClone.Services
             {
                 Id = e.CourseId,
                 Name = e.Course.Name,
-                Description = e.Course.Description
+                Description = e.Course.Description,
+                InstructorId = e.Course.InstructorId   
             }).ToList();
         }
 

@@ -104,28 +104,6 @@ namespace UdemyClone.Controllers
             }
         }
 
-        [HttpDelete("Delete-SubCategory")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteSubCategory(Guid id)
-        {
-            if (id == Guid.Empty)
-                return BadRequest("Invalid SubCategory ID.");
-
-            try
-            {
-                var result = await subCategoryService.DeleteSubCategoryAsync(id);
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-        }
-
         [HttpGet("Search-SubCategories")]
         public async Task<IActionResult> SearchSubCategories([FromQuery] string searchTerm)
         {
@@ -157,5 +135,28 @@ namespace UdemyClone.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpDelete("Delete-SubCategory")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteSubCategory(Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest("Invalid SubCategory ID.");
+
+            try
+            {
+                var result = await subCategoryService.DeleteSubCategoryAsync(id);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
     }
 }

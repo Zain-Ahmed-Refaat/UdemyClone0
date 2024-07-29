@@ -96,9 +96,10 @@ namespace UdemyClone.Services
                 throw new ArgumentException("Search term cannot be null or empty.");
 
             return await context.Topics
-                .Where(t => t.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .Where(t => t.Name.ToLower().Contains(searchTerm.ToLower()))
                 .ToListAsync();
         }
+
 
         public async Task<bool> TopicExistsAsync(Guid id)
         {

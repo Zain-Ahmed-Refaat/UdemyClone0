@@ -96,9 +96,10 @@ namespace UdemyClone.Services
                 throw new ArgumentException("Search term cannot be null or empty.");
 
             return await context.SubCategories
-                .Where(sc => sc.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .Where(sc => sc.Name.ToLower().Contains(searchTerm.ToLower()))
                 .ToListAsync();
         }
+
 
         public async Task<bool> SubCategoryExistsAsync(Guid id)
         {
