@@ -52,40 +52,61 @@ namespace UdemyClone.Services
 
             return lesson;
         }
-
-        public async Task<IEnumerable<Lesson>> GetAllLessonsAsync(Guid instructorId, int pageNumber, int pageSize)
+        public async Task<IEnumerable<dynamic>> GetAllLessonsAsync(Guid instructorId, Guid courseId, int pageNumber, int pageSize)
         {
+
+            if (instructorId == Guid.Empty)
+                throw new ArgumentNullException(nameof(instructorId), "Instructor ID cannot be empty.");
+
+            if (courseId == Guid.Empty)
+                throw new ArgumentNullException(nameof(courseId), "Course ID cannot be empty.");
+
             if (pageNumber <= 0)
                 throw new ArgumentOutOfRangeException(nameof(pageNumber), "Page number must be greater than zero.");
 
             if (pageSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be greater than zero.");
 
-            var courses = await context.Courses
-                .Where(c => c.InstructorId == instructorId)
+
+            var course = await context.Courses
+                .Where(c => c.InstructorId == instructorId && c.Id == courseId)
                 .Select(c => c.Id)
-                .ToListAsync();
+                .FirstOrDefaultAsync();
+
+            if (course == Guid.Empty)
+                throw new InvalidOperationException("Course not found or does not belong to the instructor.");
 
             var lessons = await context.Lessons
-                .Where(l => courses.Contains(l.CourseId))
+                .Where(l => l.CourseId == course)
                 .Include(l => l.Course)
+                .Include(l => l.Quizzes)
                 .OrderBy(l => l.Name)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .Select(l => new
+                {
+                    l.Id,l.Name,l.Description,l.CourseId,CourseName = l.Course.Name,Quizzes = l.Quizzes.Select(q =>new
+                    {
+                        q.Id,
+                        q.Description
+                    })
+                })
                 .ToListAsync();
+
+            if (lessons == null || !lessons.Any())
+                return new List<dynamic>();
 
             return lessons;
         }
-
         public async Task<Lesson> GetLessonByIdAsync(Guid id, Guid instructorId)
         {
             var lesson = await context.Lessons
-                .Include(l => l.Course)
+                .Include(l => l.Course.Name)
                 .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             if (lesson == null)
-                return null;
+                throw new ArgumentNullException("Lesson Not Found");
 
             if (lesson.Course.InstructorId != instructorId)
                 throw new UnauthorizedAccessException("You Do Not Have Permission to Access this Lesson.");

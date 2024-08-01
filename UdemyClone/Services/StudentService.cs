@@ -126,7 +126,7 @@ namespace UdemyClone.Services
             return enrolledCourses.Any(c => c.Id == courseId);
         }
 
-        public async Task<IEnumerable<LessonDto>> GetLessonsByCourseAsync(Guid studentId, Guid courseId, int pageNumber, int pageSize)
+        public async Task<IEnumerable<Lesson>> GetLessonsByCourseAsync(Guid studentId, Guid courseId, int pageNumber, int pageSize)
         {
 
             var isEnrolled = await IsStudentEnrolledInCourseAsync(studentId, courseId);
@@ -137,11 +137,11 @@ namespace UdemyClone.Services
 
 
             var lessons = await GetLessonsByCourseAsync(courseId, pageNumber, pageSize);
-            return lessons.Select(l => new LessonDto
+            return lessons.Select(l => new Lesson
             {
                 Name = l.Name,
                 Description = l.Description,
-                LessonId = l.Id,
+                Id = l.Id,
                 CourseId = l.CourseId
             });
         }

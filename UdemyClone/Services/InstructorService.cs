@@ -42,17 +42,18 @@ namespace UdemyClone.Services
             return course;
         }
 
-        public async Task<Course> UpdateCourseAsync(CourseModel model, Guid instructorId)
+        public async Task<Course> UpdateCourseAsync(Guid Id, CourseModel model,  Guid instructorId)
         {
             var course = await context.Courses
-                .Where(c => c.Id == model.Id && c.InstructorId == instructorId)
+                .Where(c => c.Id == Id && c.InstructorId == instructorId)
                 .FirstOrDefaultAsync();
 
             if (course == null)
-                return null;
+                throw new ArgumentNullException(nameof(course), " Course Not Found");
 
             course.Name = model.Name;
             course.Description = model.Description;
+            course.TopicId = model.TopicId;
 
             context.Courses.Update(course);
             await context.SaveChangesAsync();
@@ -69,7 +70,6 @@ namespace UdemyClone.Services
                 .ThenInclude(sc => sc.Student)
                 .ToListAsync();
 
-            // Map the data to the DTO
             var courseEnrollments = courses.Select(course => new CourseEnrollmentsDto
             {
                 CourseId = course.Id,
@@ -101,7 +101,7 @@ namespace UdemyClone.Services
                 .ToListAsync();
         }
 
-        public async Task<(IEnumerable<Course> Courses, int TotalPages)> GetAllCoursesAsync(int pageNumber, int pageSize)
+        public async Task<(IEnumerable<CourseDto> Courses, int TotalPages)> GetAllCoursesAsync(int pageNumber, int pageSize)
         {
             var totalCourses = await context.Courses.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCourses / (double)pageSize);
@@ -109,6 +109,15 @@ namespace UdemyClone.Services
             var courses = await context.Courses
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .Select(c => new CourseDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    Topic = c.Topic.Name,
+                    InstructorId = c.InstructorId,
+                    InstructorName = c.Instructor.UserName
+                })
                 .ToListAsync();
 
             return (courses, totalPages);
@@ -139,19 +148,50 @@ namespace UdemyClone.Services
             return true; 
         }
 
-        public async Task<CourseDto> GetCourseByIdAsync(Guid courseId)
+        public async Task<CourseDto> GetCourseByIdAsync(Guid courseId, Guid InstructorId, string userRole)
         {
+
+            if (string.IsNullOrEmpty(userRole))
+            {
+                throw new ArgumentNullException(nameof(userRole), "User role must be provided.");
+            }
+
             var course = await context.Courses
                 .Where(c => c.Id == courseId)
-                .Select(c => new CourseDto
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Description = c.Description
-                })
                 .FirstOrDefaultAsync();
 
-            return course;
+            if (course == null)
+            {
+                throw new KeyNotFoundException("Course not found.");
+            }
+
+            if (userRole.Equals("Instructor", StringComparison.OrdinalIgnoreCase))
+            {
+
+                if (course.InstructorId != InstructorId)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to access this course.");
+                }
+            }
+            else if (userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+              
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("You are not authorized to access this course.");
+            }
+
+            return new CourseDto
+            {
+                Id = course.Id,
+                Name = course.Name,
+                Description = course.Description,
+                InstructorName = course.Instructor.UserName,
+                InstructorId = course.InstructorId,
+                Topic = course.Topic.Name
+            };
         }
+
     }
 }

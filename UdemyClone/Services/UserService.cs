@@ -70,7 +70,7 @@ namespace UdemyClone.Services
 
                 case { Role: UserRole.Admin }:
                     return new UserManagerResponse {
-                        Message = "You Cannot Register as an Admin.",
+                        Message = "You Cannot Register as a Admin.",
                         isAuthenticated = false
                     };
 

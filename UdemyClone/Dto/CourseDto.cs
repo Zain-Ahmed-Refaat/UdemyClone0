@@ -7,6 +7,7 @@
         public string Description { get; set; }
         public string Topic { get; set; }
         public Guid InstructorId { get; set; }
+        public string InstructorName { get; set; }
 
     }
 }

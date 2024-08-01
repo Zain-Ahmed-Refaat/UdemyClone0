@@ -50,13 +50,13 @@ namespace UdemyClone.Controllers
 
         [HttpGet("Get-All-Lessons")]
         [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> GetAllLessons([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAllLessons(Guid CourseId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var instructorId = GetIdFromToken();
 
             try
             {
-                var lessons = await courseService.GetAllLessonsAsync(instructorId, pageNumber, pageSize);
+                var lessons = await courseService.GetAllLessonsAsync(instructorId, CourseId, pageNumber, pageSize);
                 return Ok(lessons);
             }
             catch (Exception ex)

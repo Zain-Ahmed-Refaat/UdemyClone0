@@ -7,7 +7,7 @@ namespace UdemyClone.Dto
         public Guid Id { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
-        public List<EnrollmentDto> Enrollments { get; set; } = new List<EnrollmentDto>();
+        public List<EnrollmentDto> Enrollments { get; set; }
     }
 
     public class EnrollmentDto

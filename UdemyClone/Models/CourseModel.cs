@@ -12,8 +12,6 @@ namespace UdemyClone.Models
         [StringLength(1000)]
         public string Description { get; set; }
 
-        public Guid Id { get; set; }
-
         [Required]
         public Guid TopicId { get; set; }
     }
