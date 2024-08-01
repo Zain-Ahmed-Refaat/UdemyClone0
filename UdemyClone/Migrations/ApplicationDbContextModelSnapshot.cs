@@ -265,8 +265,6 @@ namespace UdemyClone.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CorrectAnswerId");
-
                     b.HasIndex("QuizId");
 
                     b.ToTable("Questions", (string)null);
@@ -591,19 +589,11 @@ namespace UdemyClone.Migrations
 
             modelBuilder.Entity("UdemyClone.Entities.Question", b =>
                 {
-                    b.HasOne("UdemyClone.Entities.Answer", "CorrectAnswer")
-                        .WithMany()
-                        .HasForeignKey("CorrectAnswerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("UdemyClone.Entities.Quiz", "Quiz")
                         .WithMany("Questions")
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("CorrectAnswer");
 
                     b.Navigation("Quiz");
                 });
@@ -634,7 +624,7 @@ namespace UdemyClone.Migrations
                         .IsRequired();
 
                     b.HasOne("UdemyClone.Entities.StudentQuiz", "StudentQuiz")
-                        .WithMany("StudentAnswers")
+                        .WithMany()
                         .HasForeignKey("StudentQuizId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -743,11 +733,6 @@ namespace UdemyClone.Migrations
             modelBuilder.Entity("UdemyClone.Entities.Quiz", b =>
                 {
                     b.Navigation("Questions");
-                });
-
-            modelBuilder.Entity("UdemyClone.Entities.StudentQuiz", b =>
-                {
-                    b.Navigation("StudentAnswers");
                 });
 
             modelBuilder.Entity("UdemyClone.Entities.User", b =>

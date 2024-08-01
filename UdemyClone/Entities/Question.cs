@@ -7,7 +7,7 @@
         public Guid QuizId { get; set; }
         public Quiz Quiz { get; set; }
         public ICollection<Answer> Answers { get; set; }
-        public Guid CorrectAnswerId { get; set; }  // Reference to the correct answer
+        public Guid CorrectAnswerId { get; set; }
         public Answer CorrectAnswer { get; set; }
     }
 }

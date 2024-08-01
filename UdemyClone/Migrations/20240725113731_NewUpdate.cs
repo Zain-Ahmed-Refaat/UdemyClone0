@@ -67,7 +67,7 @@ namespace UdemyClone.Migrations
                         column: x => x.QuizId,
                         principalTable: "Quizzes",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(
