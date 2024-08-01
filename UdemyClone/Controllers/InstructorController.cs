@@ -1,10 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UdemyClone.Dto;
 using UdemyClone.Entities;
 using UdemyClone.Models;
-using UdemyClone.Services;
 using UdemyClone.Services.IServices;
 
 namespace UdemyClone.Controllers
@@ -66,7 +64,7 @@ namespace UdemyClone.Controllers
 
         [HttpPut("Update-Course")]
         [Authorize(Roles = "Instructor")]
-        public async Task<IActionResult> UpdateCourse([FromBody] CourseModel model, Guid CourseId)
+        public async Task<IActionResult> UpdateCourse([FromBody] CourseModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -75,7 +73,7 @@ namespace UdemyClone.Controllers
 
             var instructorId = GetIdFromToken();
 
-            var updatedCourse = await instructorService.UpdateCourseAsync(CourseId, model, instructorId);
+            var updatedCourse = await instructorService.UpdateCourseAsync(model, instructorId);
 
             if (updatedCourse == null)
             {
@@ -139,38 +137,22 @@ namespace UdemyClone.Controllers
         }
 
         [HttpGet("Get-Course-By-Id")]
-        [Authorize(Roles = "Instructor, Admin")]
-        public async Task<IActionResult> GetCourseById(Guid courseId)
+        [Authorize(Roles = "Instructor")]
+        public async Task<IActionResult> GetCourseById(Guid id)
         {
-            try
-            {
-                var userId = GetIdFromToken();
-                var userRole = GetUserRole();
+            if (id == Guid.Empty)
+                return BadRequest("Course ID cannot be empty.");
 
-                var course = await instructorService.GetCourseByIdAsync(courseId, userId, userRole);
+            var course = await instructorService.GetCourseByIdAsync(id);
 
-                return Ok(course);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Forbid(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
+            if (course == null)
+                return NotFound("Course not found.");
+
+            return Ok(course);
         }
 
         [HttpDelete("Delete-Course")]
-        [Authorize(Roles = "Instructor, Admin")]
+        [Authorize(Roles = "Instructor")]
         public async Task<IActionResult> DeleteCourse(Guid id)
         {
             if (id == Guid.Empty)
@@ -196,15 +178,6 @@ namespace UdemyClone.Controllers
 
             return userID;
         }
-
-        private string GetUserRole()
-        {       
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
-
-            return string.IsNullOrEmpty(userRole) ? "Guest" : userRole;
-        }
-
-
 
     }
 }
